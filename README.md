@@ -8,3 +8,9 @@ kNN
 
 ## chapter 03
 ID3
+
+## chapter 04
+Naive Bayes (not finished yet)
+
+## chapter 05
+logistic
