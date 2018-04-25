@@ -27,7 +27,7 @@ def load_data_set(file_name):
             line_arr.append(float(cur_line[i]))
         data_mat.append(line_arr)
         label_mat.append(float(cur_line[-1]))
-    return data_mat, label_mat
+    return np.array(data_mat), np.array(label_mat)
 
 
 def draw_graph(X, Y, labels):
@@ -85,26 +85,32 @@ def build_stump(data_arr, class_labels, D):
                     best_stump['dim'] = i
                     best_stump['thresh'] = thresh_val
                     best_stump['ineq'] = inequal
-    return best_stump, min_error, best_class_est
+    return best_stump, min_error[0,0], best_class_est
 
 
 def adaboost_train_ds(data_arr, class_labels, num_it=40):
+    # 弱分类器列表
     weak_class_arr = []
+    # 样本数
     m = np.shape(data_arr)[0]
+    # 数据分布(每一个样本的权重)
     D = np.mat(np.ones((m, 1)) / m)
+    # 对每一个样本的分类预测
     agg_class_est = np.mat(np.zeros((m, 1)))
     for i in range(num_it):
         best_stump, error, class_est = build_stump(data_arr, class_labels, D)
-        print("D:", D.T)
-        alpha = float(0.5 * np.log((1.0 - error) / np.max(error, 1e-16)))
+        # print("D:", D.T)
+        # alpha = float(0.5 * np.log((1.0 - error) / np.max(error, 1e-16)))
+        alpha = 0.5 * np.log((1.0 - error) / np.max(error, 1e-16))
         best_stump['alpha'] = alpha
         weak_class_arr.append(best_stump)
         print("class_est:", class_est.T)
         expon = np.multiply(-1 * alpha * np.mat(class_labels).T, class_est)  # 正确的分类expon=-1*alpha，错误的分类expon=alpha
         D = np.multiply(D, np.exp(expon))
         D = D / D.sum()
+        # 将之前的预测结果加上本次修正
         agg_class_est += alpha * class_est
-        print("agg_class_est:", agg_class_est.T)
+        # print("agg_class_est:", agg_class_est.T)
         agg_errors = np.multiply(np.sign(agg_class_est) != np.mat(class_labels).T, np.ones((m, 1)))
         error_rate = agg_errors.sum() / m
         print("total error: ", error_rate)
@@ -131,7 +137,10 @@ def adaboost_classify(data_to_class, classifier_arr):
         print(agg_class_est)
     return np.sign(agg_class_est)
 
-# if __name__ == '__main__':
-#     data, labels = load_simple_data()
-#     X, Y = np.squeeze(np.asarray(data[:, 0].T)), np.squeeze(np.asarray(data[:, 1].T))
-#     draw_graph(X, Y, labels)
+
+if __name__ == '__main__':
+    train_data, train_labels = load_data_set('horseColicTraining.txt')
+    test_data, test_labels = load_data_set('horseColicTest.txt')
+    train_labels[train_labels != 1] = -1
+    test_labels[test_labels != 1] = -1
+    adaboost_train_ds(train_data, train_labels)
